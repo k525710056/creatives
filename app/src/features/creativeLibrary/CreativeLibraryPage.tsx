@@ -5,7 +5,8 @@ import IconRail from '../../components/IconRail';
 import ShoppableContentDrawer, {
   type SavedShoppableAsset,
 } from '../shoppableDrawer/ShoppableContentDrawer';
-import { LIBRARY_CREATIVES, LIBRARY_KINDS, SHOPPABLE_ASSETS, type LibraryKind, type ShoppableAsset } from '../../data/library';
+import { SHOPPABLE_ASSETS, type ShoppableAsset } from '../../data/library';
+import { CREATIVES, CREATIVE_KINDS, type CreativeKind } from '../../data/creatives';
 import { libraryRoutes } from '../../routes';
 import LibraryOverview from './LibraryOverview';
 import MediaTable from './MediaTable';
@@ -39,23 +40,26 @@ export default function CreativeLibraryPage() {
 
   const { page, mediaTab } = useMemo(() => {
     const rest = location.pathname.replace(/^\/creative-library\/?/, '');
-    if (rest.startsWith('shoppable')) return { page: 'shoppable' as Page, mediaTab: 'video' as LibraryKind };
+    if (rest.startsWith('shoppable')) return { page: 'shoppable' as Page, mediaTab: 'video' as CreativeKind };
     const media = rest.match(/^media\/(\w+)/);
     if (media) {
-      const kind = LIBRARY_KINDS.find((k) => k.key === media[1])?.key ?? 'video';
+      const kind = CREATIVE_KINDS.find((k) => k.key === media[1])?.key ?? 'video';
       return { page: 'media' as Page, mediaTab: kind };
     }
-    return { page: 'overview' as Page, mediaTab: 'video' as LibraryKind };
+    return { page: 'overview' as Page, mediaTab: 'video' as CreativeKind };
   }, [location.pathname]);
 
   const setsFor = (assetId: string) => sets.filter((x) => x.assetIds.includes(assetId));
-  const unlinkedCount = LIBRARY_CREATIVES.filter((a) => setsFor(a.id).length === 0).length;
+  // Catalog imagery is a fallback, never something you assemble, so it is not
+  // part of the "still needs linking" gap the checklist and readiness ring count.
+  const linkable = CREATIVES.filter((c) => c.kind !== 'catalog');
+  const unlinkedCount = linkable.filter((a) => setsFor(a.id).length === 0).length;
   const allLinked = unlinkedCount === 0;
 
   const go = (path: string) => navigate(startEmpty ? `${path}?empty=1` : path);
   const goOverview = () => go(libraryRoutes.overview);
   const goShoppable = () => go(libraryRoutes.shoppable);
-  const goMedia = (kind: LibraryKind) => go(libraryRoutes.media(kind));
+  const goMedia = (kind: CreativeKind) => go(libraryRoutes.media(kind));
 
   const openCreate = () => setCreateOpen(true);
   /** Land on Shoppable assets first, so closing the drawer leaves you where the
@@ -129,7 +133,7 @@ export default function CreativeLibraryPage() {
                   </button>
 
                   <p className={s.navGroup}>Creative assets</p>
-                  {LIBRARY_KINDS.map((k) => (
+                  {CREATIVE_KINDS.map((k) => (
                     <button
                       type="button"
                       key={k.key}
@@ -213,7 +217,7 @@ export default function CreativeLibraryPage() {
         open={checklistOpen}
         onToggle={() => setChecklistOpen((v) => !v)}
         unlinkedCount={unlinkedCount}
-        totalCount={LIBRARY_CREATIVES.length}
+        totalCount={linkable.length}
         onCreate={openCreate}
       />
     </div>

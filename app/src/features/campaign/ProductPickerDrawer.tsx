@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PRICES, PROMOTED_PRODUCTS } from '../../data/campaign';
+import { PRODUCTS } from '../../data/products';
+import { bg } from '../../data/media';
 import { libraryRoutes } from '../../routes';
-import { IconCheck, IconChevronDown, IconChevronLeft, IconChevronRight, IconSearch } from '../../components/icons';
-import { bg } from './style';
+import {
+  IconCheck,
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+  IconSearch,
+} from '../../components/icons';
 import d from './CampaignDrawers.module.css';
 
 interface Props {
@@ -16,14 +22,14 @@ export default function ProductPickerDrawer({ initialSelection, onCancel, onSave
   const [selection, setSelection] = useState<string[]>(initialSelection);
   const [query, setQuery] = useState('');
 
-  const allPicked = selection.length === PROMOTED_PRODUCTS.length;
+  const allPicked = selection.length === PRODUCTS.length;
   const q = query.trim().toLowerCase();
-  const rows = PROMOTED_PRODUCTS.filter(
-    (p) => !q || p.name.toLowerCase().includes(q) || p.spu.toLowerCase().includes(q),
+  const rows = PRODUCTS.filter(
+    (p) => !q || p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
   );
 
-  const toggle = (spu: string) =>
-    setSelection((cur) => (cur.includes(spu) ? cur.filter((x) => x !== spu) : [...cur, spu]));
+  const toggle = (sku: string) =>
+    setSelection((cur) => (cur.includes(sku) ? cur.filter((x) => x !== sku) : [...cur, sku]));
 
   return (
     <>
@@ -108,9 +114,7 @@ export default function ProductPickerDrawer({ initialSelection, onCancel, onSave
               <button
                 type="button"
                 className={`${d.box} ${allPicked ? d.boxOn : ''}`}
-                onClick={() =>
-                  setSelection(allPicked ? [] : PROMOTED_PRODUCTS.map((p) => p.spu))
-                }
+                onClick={() => setSelection(allPicked ? [] : PRODUCTS.map((p) => p.sku))}
                 aria-label="Select all products"
               >
                 {allPicked ? <IconCheck size={12} /> : null}
@@ -122,28 +126,27 @@ export default function ProductPickerDrawer({ initialSelection, onCancel, onSave
 
             <div className={d.pickerRows}>
               {rows.map((p) => {
-                const i = PROMOTED_PRODUCTS.indexOf(p);
-                const on = selection.includes(p.spu);
+                const on = selection.includes(p.sku);
                 return (
                   <button
                     type="button"
-                    key={p.spu}
+                    key={p.id}
                     className={`${d.pickerRow} ${on ? d.pickerRowOn : ''}`}
-                    onClick={() => toggle(p.spu)}
+                    onClick={() => toggle(p.sku)}
                   >
                     <span className={`${d.box} ${on ? d.boxOn : ''}`}>
                       {on ? <IconCheck size={12} /> : null}
                     </span>
-                    <span className={d.rowImg} style={bg(p.img)} />
+                    <span className={d.rowImg} style={bg(p.photo)} />
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span className={d.rowName} style={{ display: 'block' }}>
                         {p.name}
                       </span>
                       <span className={d.rowSku} style={{ display: 'block' }}>
-                        SKU {p.spu.replace('SPU ', '')}0{i}
+                        {p.sku}
                       </span>
                     </span>
-                    <span className={d.rowPrice}>{PRICES[i]} USD</span>
+                    <span className={d.rowPrice}>{p.price.replace('$', '')} USD</span>
                     <span className={d.rowUrl}>URL</span>
                   </button>
                 );

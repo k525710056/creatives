@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { PROMOTED, shorten, type PromotedProduct } from '../../data/campaign';
 import {
-  BADGE,
-  CUTS,
-  KIND,
-  PROMOTED_PRODUCTS,
-  SLUG,
-  shorten,
-  type PromotedProduct,
-} from '../../data/campaign';
+  CATALOG_CREATIVES,
+  creativeBadge,
+  creativeMeta,
+  kindLabel,
+  type Creative,
+} from '../../data/creatives';
+import { bg } from '../../data/media';
 import { libraryRoutes } from '../../routes';
 import { IconCheck, IconChevronLeft, IconPlus, IconSearch } from '../../components/icons';
-import { bg } from './style';
 import d from './CampaignDrawers.module.css';
 
 type Tab = 'Video' | 'Image' | 'Catalog';
@@ -19,15 +18,15 @@ type Mode = 'Product' | 'Creative';
 
 interface Props {
   list: PromotedProduct[];
-  product: PromotedProduct;
+  entry: PromotedProduct;
   prod: number;
   onPickProduct: (index: number) => void;
   mode: Mode;
   onSetMode: (mode: Mode) => void;
   tab: Tab;
   onSetTab: (tab: Tab) => void;
-  sel: number[];
-  onSetSel: (sel: number[]) => void;
+  sel: string[];
+  onSetSel: (sel: string[]) => void;
   urlMode: boolean;
   allScope: boolean;
   onClose: () => void;
@@ -36,7 +35,7 @@ interface Props {
 
 export default function SelectCreativesDrawer({
   list,
-  product,
+  entry,
   prod,
   onPickProduct,
   mode,
@@ -52,47 +51,42 @@ export default function SelectCreativesDrawer({
 }: Props) {
   const [query, setQuery] = useState('');
 
-  /** Every creative across the campaign's products, with what it is linked to. */
-  const all = PROMOTED_PRODUCTS.flatMap((p) =>
-    Array.from({ length: p.videos }, (_, j) => ({
-      name: (SLUG[p.spu] ?? 'creative') + '-' + KIND[j % KIND.length],
-      badge: BADGE[j % BADGE.length],
-      link: 'Linked to 1 SPU · ' + p.spu.replace('SPU ', ''),
-      img: p.covers?.[j],
-      fallback: p.img,
-      orphan: false,
-    })),
-  ).concat([
-    {
-      name: 'holiday-teaser',
-      badge: '00:18',
-      link: 'Not linked to a product',
-      img: undefined,
-      fallback: PROMOTED_PRODUCTS[0].img,
-      orphan: true,
-    },
-  ]);
-
-  const [allSel, setAllSel] = useState<number[]>(() =>
-    all.map((_, i) => i).slice(0, all.length - 1),
-  );
-
+  const { product, creatives } = entry;
   const productMode = mode === 'Product';
-  const hasCreatives = product.videos > 0 && tab !== 'Catalog';
-  const noCreatives = product.videos === 0 && tab !== 'Catalog';
+
+  /** The catalog photo is always available, and is what the ad falls back to. */
+  const catalogCreative = CATALOG_CREATIVES.find((c) => c.name.startsWith(product.sku));
+
+  const inTab: Creative[] =
+    tab === 'Catalog'
+      ? catalogCreative
+        ? [catalogCreative]
+        : []
+      : creatives.filter((c) => (tab === 'Video' ? c.kind === 'video' : c.kind === 'image'));
+
+  const hasCreatives = inTab.length > 0 && tab !== 'Catalog';
+  const noCreatives = creatives.length === 0 && tab !== 'Catalog';
 
   const q = query.trim().toLowerCase();
   const railRows = list
-    .map((p, i) => ({ p, i }))
-    .filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.spu.toLowerCase().includes(q));
+    .map((entryRow, i) => ({ entryRow, i }))
+    .filter(
+      ({ entryRow }) =>
+        !q ||
+        entryRow.product.name.toLowerCase().includes(q) ||
+        entryRow.product.sku.toLowerCase().includes(q),
+    );
 
-  const tiles = CUTS.slice(0, product.videos);
+  /** Every creative this campaign could serve, with the product it belongs to. */
+  const all = list.flatMap((row) =>
+    row.creatives.map((c) => ({ creative: c, sku: row.product.sku })),
+  );
+  const [allSel, setAllSel] = useState<string[]>(() => all.map((x) => x.creative.id));
 
-  const eyeCare = PROMOTED_PRODUCTS.filter((p) =>
-    ['SPU 4471', 'SPU 4473', 'SPU 4474'].includes(p.spu),
-  ).reduce((n, p) => n + p.videos, 0);
-  const productShot = PROMOTED_PRODUCTS.filter((p) => !p.covers).reduce((n, p) => n + p.videos, 0);
-  const imageTotal = PROMOTED_PRODUCTS.reduce((n, p) => n + p.images, 0);
+  const tagCount = (tag: string) => all.filter((x) => x.creative.tags.includes(tag)).length;
+
+  const toggle = (id: string) =>
+    onSetSel(sel.includes(id) ? sel.filter((x) => x !== id) : [...sel, id]);
 
   return (
     <>
@@ -133,11 +127,7 @@ export default function SelectCreativesDrawer({
                 {productMode ? 'Products' : '‹ All'}
               </button>
               {productMode ? (
-                <button
-                  type="button"
-                  className={d.railLink}
-                  onClick={() => onSetMode('Creative')}
-                >
+                <button type="button" className={d.railLink} onClick={() => onSetMode('Creative')}>
                   View all creatives
                 </button>
               ) : null}
@@ -155,21 +145,21 @@ export default function SelectCreativesDrawer({
                     aria-label="Search product"
                   />
                 </div>
-                {railRows.map(({ p, i }) => {
-                  const gap = p.videos === 0;
+                {railRows.map(({ entryRow, i }) => {
+                  const gap = entryRow.catalogOnly;
                   const active = prod === i;
                   return (
                     <button
                       type="button"
-                      key={p.spu}
+                      key={entryRow.product.id}
                       className={`${d.railRow} ${gap ? d.railRowGap : ''} ${active ? d.railRowActive : ''}`}
                       onClick={() => onPickProduct(i)}
                     >
-                      <span className={d.railImg} style={bg(p.img)} />
+                      <span className={d.railImg} style={bg(entryRow.product.photo)} />
                       <span style={{ minWidth: 0 }}>
                         <span className={d.railNameRow}>
                           <span className={`${d.railName} ${active ? d.railNameActive : ''}`}>
-                            {shorten(p.name)}
+                            {shorten(entryRow.product.name)}
                           </span>
                           {gap ? (
                             <span className={d.gapMarkSm}>
@@ -180,8 +170,8 @@ export default function SelectCreativesDrawer({
                         </span>
                         <span className={`${d.railMeta} ${gap ? d.railMetaGap : ''}`}>
                           {gap
-                            ? `${p.spu} · catalog image only`
-                            : `${p.spu} · ${p.videos} ${p.videos === 1 ? 'creative' : 'creatives'}`}
+                            ? `${entryRow.product.sku} · catalog image only`
+                            : `${entryRow.product.sku} · ${entryRow.creatives.length} ${entryRow.creatives.length === 1 ? 'creative' : 'creatives'}`}
                         </span>
                       </span>
                     </button>
@@ -200,8 +190,12 @@ export default function SelectCreativesDrawer({
               </>
             ) : (
               <div className={d.collapsedRail}>
-                {list.map((p) => (
-                  <div key={p.spu} className={d.collapsedTile} style={bg(p.img)} />
+                {list.map((row) => (
+                  <div
+                    key={row.product.id}
+                    className={d.collapsedTile}
+                    style={bg(row.product.photo)}
+                  />
                 ))}
               </div>
             )}
@@ -218,8 +212,8 @@ export default function SelectCreativesDrawer({
               <div className={d.tabs}>
                 {(
                   [
-                    ['Video', `Video (${product.videos})`],
-                    ['Image', `Image (${product.images})`],
+                    ['Video', `Video (${entry.videos})`],
+                    ['Image', `Image (${entry.images})`],
                     // A catalog product always carries its own image, so never 0.
                     ['Catalog', 'Catalog (1)'],
                   ] as [Tab, string][]
@@ -238,27 +232,32 @@ export default function SelectCreativesDrawer({
               {hasCreatives ? (
                 <>
                   <div className={d.filterChips}>
-                    <span className={d.filterChip}>All</span>
-                    <span className={`${d.filterChip} ${d.filterChipOn}`}>
-                      Eye care ({allScope ? 7 : 3})
-                    </span>
-                    <span className={d.filterChip}>Summer sale (1)</span>
-                    <span className={d.filterChip}>Best seller (1)</span>
-                    <span className={d.filterChip}>Holiday (1)</span>
+                    <span className={`${d.filterChip} ${d.filterChipOn}`}>All</span>
+                    {Array.from(new Set(inTab.flatMap((c) => c.tags))).map((t) => (
+                      <span key={t} className={d.filterChip}>
+                        {t} ({inTab.filter((c) => c.tags.includes(t)).length})
+                      </span>
+                    ))}
                   </div>
                   <div className={d.selRow}>
                     <span className={d.selCount}>
-                      {sel.length} of {product.videos} selected
+                      {inTab.filter((c) => sel.includes(c.id)).length} of {inTab.length} selected
                     </span>
                     <span className={d.selActions}>
                       <button
                         type="button"
                         className={d.selectAll}
-                        onClick={() => onSetSel([0, 1, 2].slice(0, product.videos))}
+                        onClick={() =>
+                          onSetSel(Array.from(new Set([...sel, ...inTab.map((c) => c.id)])))
+                        }
                       >
                         Select all
                       </button>
-                      <button type="button" className={d.clearSel} onClick={() => onSetSel([])}>
+                      <button
+                        type="button"
+                        className={d.clearSel}
+                        onClick={() => onSetSel(sel.filter((id) => !inTab.some((c) => c.id === id)))}
+                      >
                         Clear
                       </button>
                     </span>
@@ -266,18 +265,18 @@ export default function SelectCreativesDrawer({
                 </>
               ) : null}
 
-              {tab === 'Catalog' ? (
+              {tab === 'Catalog' && catalogCreative ? (
                 <>
                   <div className={d.tileGrid}>
                     <div className={d.tileStatic}>
-                      <div className={d.tileMedia} style={bg(product.img)}>
+                      <div className={d.tileMedia} style={bg(catalogCreative.media)}>
                         <div className={d.tileBadges}>
                           <span className={d.tileBadge}>CATALOG</span>
                         </div>
                       </div>
                       <div className={d.tileCaptionTight}>
                         <div className={d.tileName}>{shorten(product.name)} · catalog image</div>
-                        <div className={d.tileMeta}>{product.spu} · from your catalog</div>
+                        <div className={d.tileMeta}>{product.sku} · from your catalog</div>
                       </div>
                     </div>
                   </div>
@@ -289,36 +288,31 @@ export default function SelectCreativesDrawer({
 
               {hasCreatives ? (
                 <div className={d.tileGrid}>
-                  {tiles.map((cut, i) => {
-                    const on = sel.includes(i);
+                  {inTab.map((c) => {
+                    const on = sel.includes(c.id);
                     return (
                       <button
                         type="button"
-                        key={cut.suffix}
+                        key={c.id}
                         className={`${d.tile} ${on ? d.tileOn : ''}`}
-                        onClick={() =>
-                          onSetSel(on ? sel.filter((x) => x !== i) : [...sel, i])
-                        }
+                        onClick={() => toggle(c.id)}
                       >
-                        <span
-                          className={d.tileMedia}
-                          style={bg(product.covers?.[i], product.img)}
-                        >
+                        <span className={d.tileMedia} style={bg(c.media)}>
                           <span className={d.tileBadges}>
-                            <span className={d.tileBadge}>VIDEO</span>
-                            <span className={d.tileBadge}>{cut.tag}</span>
+                            <span className={d.tileBadge}>{kindLabel(c.kind).toUpperCase()}</span>
+                            <span className={d.tileBadge}>{c.tags[0]?.toUpperCase()}</span>
                           </span>
                           <span className={`${d.tileMark} ${on ? d.tileMarkOn : ''}`}>
                             {on ? <IconCheck size={12} /> : null}
                           </span>
-                          <span className={d.tileDuration}>{cut.badge}</span>
+                          <span className={d.tileDuration}>{creativeBadge(c)}</span>
                         </span>
                         <span className={d.tileCaption} style={{ display: 'block' }}>
                           <span className={d.tileName} style={{ display: 'block' }}>
-                            {shorten(product.name)} · {cut.suffix}
+                            {c.name}
                           </span>
                           <span className={d.tileMeta} style={{ display: 'block' }}>
-                            {cut.meta}
+                            {creativeMeta(c)}
                           </span>
                         </span>
                       </button>
@@ -385,18 +379,22 @@ export default function SelectCreativesDrawer({
                     : 'Every creative from your Creative Library associated with these products.'}
                 </div>
                 <div className={d.tabs}>
-                  <div className={`${d.tab} ${d.tabActive}`}>Video ({all.length})</div>
-                  <div className={d.tab}>Image ({imageTotal})</div>
-                  <div className={d.tab}>Catalog (0)</div>
+                  <div className={`${d.tab} ${d.tabActive}`}>
+                    Video ({all.filter((x) => x.creative.kind === 'video').length})
+                  </div>
+                  <div className={d.tab}>
+                    Image ({all.filter((x) => x.creative.kind === 'image').length})
+                  </div>
+                  <div className={d.tab}>Catalog ({PROMOTED.length})</div>
                 </div>
                 <div className={`${d.selRow} ${d.selRowWrap}`}>
                   <div className={d.filterChips} style={{ marginBottom: 0 }}>
                     <span className={`${d.filterChip} ${d.filterChipOn}`}>All</span>
-                    <span className={d.filterChip}>Eye care ({eyeCare})</span>
-                    <span className={d.filterChip}>
-                      Creator UGC ({Math.max(1, Math.round(all.length / 3))})
-                    </span>
-                    <span className={d.filterChip}>Product shot ({productShot})</span>
+                    {['Eye care', 'UGC', 'Hero'].map((t) => (
+                      <span key={t} className={d.filterChip}>
+                        {t} ({tagCount(t)})
+                      </span>
+                    ))}
                   </div>
                   <div className={d.selActions}>
                     <span className={d.selCount}>
@@ -405,7 +403,7 @@ export default function SelectCreativesDrawer({
                     <button
                       type="button"
                       className={d.selectAll}
-                      onClick={() => setAllSel(all.map((_, i) => i))}
+                      onClick={() => setAllSel(all.map((x) => x.creative.id))}
                     >
                       Select all
                     </button>
@@ -415,34 +413,33 @@ export default function SelectCreativesDrawer({
                   </div>
                 </div>
                 <div className={d.tileGrid}>
-                  {all.map((c, i) => {
-                    const on = allSel.includes(i);
+                  {all.map(({ creative, sku }) => {
+                    const on = allSel.includes(creative.id);
                     return (
                       <button
                         type="button"
-                        key={`${c.name}-${i}`}
+                        key={`${sku}-${creative.id}`}
                         className={`${d.tile} ${d.tileWide} ${on ? d.tileOn : ''}`}
                         onClick={() =>
                           setAllSel((cur) =>
-                            cur.includes(i) ? cur.filter((x) => x !== i) : [...cur, i],
+                            cur.includes(creative.id)
+                              ? cur.filter((x) => x !== creative.id)
+                              : [...cur, creative.id],
                           )
                         }
                       >
-                        <span className={d.tileMedia} style={bg(c.img, c.fallback)}>
+                        <span className={d.tileMedia} style={bg(creative.media)}>
                           <span className={`${d.tileMark} ${on ? d.tileMarkOn : ''}`}>
                             {on ? <IconCheck size={12} /> : null}
                           </span>
-                          <span className={d.tileDuration}>{c.badge}</span>
+                          <span className={d.tileDuration}>{creativeBadge(creative)}</span>
                         </span>
                         <span className={d.tileCaption} style={{ display: 'block' }}>
                           <span className={d.tileName} style={{ display: 'block' }}>
-                            {c.name}
+                            {creative.name}
                           </span>
-                          <span
-                            className={`${d.tileMeta} ${c.orphan ? d.tileMetaOrphan : ''}`}
-                            style={{ display: 'block' }}
-                          >
-                            {c.link}
+                          <span className={d.tileMeta} style={{ display: 'block' }}>
+                            Linked to {sku}
                           </span>
                         </span>
                       </button>

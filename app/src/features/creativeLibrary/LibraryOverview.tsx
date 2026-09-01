@@ -1,8 +1,6 @@
-import {
-  CONTENT_SUITE_PROJECTS,
-  LIBRARY_CREATIVES,
-  OVERVIEW_STATS,
-} from '../../data/library';
+import { CONTENT_SUITE_PROJECTS, OVERVIEW_STATS } from '../../data/library';
+import { CREATIVES } from '../../data/creatives';
+import { bg } from '../../data/media';
 import {
   IconAd,
   IconCheck,
@@ -12,8 +10,6 @@ import {
 import s from './CreativeLibrary.module.css';
 
 const RING_CIRCUMFERENCE = 163.363;
-
-const bg = (url: string) => ({ ['--thumb' as string]: `url(${url})` });
 
 interface Props {
   unlinkedCount: number;
@@ -32,7 +28,7 @@ export default function LibraryOverview({ unlinkedCount, onStart }: Props) {
     { label: 'Link creatives to catalog products', done: allLinked },
   ];
 
-  const topAssets = LIBRARY_CREATIVES.slice(0, 4);
+  const topAssets = CREATIVES.slice(0, 4);
 
   return (
     <div className={s.stack20}>
@@ -121,7 +117,7 @@ export default function LibraryOverview({ unlinkedCount, onStart }: Props) {
               {topAssets.map((a) => (
                 <div key={a.id} className={`${s.topRow} ${s.topBodyRow}`}>
                   <div className={s.topAsset}>
-                    <div className={s.topThumb} style={bg(a.thumbnail)} />
+                    <div className={s.topThumb} style={bg(a.media)} />
                     <div style={{ minWidth: 0 }}>
                       <p className={s.topName}>{a.name}</p>
                       <p className={s.topType}>{a.source === 'aigc' ? 'AIGC video' : 'Video'}</p>

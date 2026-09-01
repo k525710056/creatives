@@ -93,7 +93,7 @@ await page.goto(`${BASE}/#/campaign`, { waitUntil: 'networkidle' });
 console.log('no stray drawer overlay:', (await page.locator('[class*="overlay"]').count()) === 0);
 await page.getByRole('button', { name: 'Edit products' }).click();
 await page.waitForTimeout(400);
-console.log('picker rows:', await page.locator('text=SKU 4471').count());
+console.log('picker rows:', await page.locator('text=SPU 4471').count());
 
 await browser.close();
 

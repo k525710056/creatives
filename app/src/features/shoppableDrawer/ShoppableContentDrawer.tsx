@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CAMPAIGN_PRODUCT_IDS,
-  DRAWER_CREATIVES,
-  DRAWER_KINDS,
+  CREATIVES,
   LINKED,
+  SELECTABLE_KINDS,
+  creativeBadge,
+  creativeMeta,
+  kindLabel,
   linkedCount,
-  type DrawerKind,
+  productsUsing,
+  type CreativeKind,
 } from '../../data/creatives';
+import { bg } from '../../data/media';
 import { PRODUCTS, findProductOwningUrl, productUrl, type Product } from '../../data/products';
 import { libraryRoutes, routes } from '../../routes';
 import {
@@ -25,7 +29,9 @@ const SEEN_KEY = 'ole2_shoppable_wizard_seen';
 
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? '' : 's'}`;
 const stripProtocol = (u: string) => u.replace(/^https?:\/\//, '');
-const bg = (url: string) => ({ ['--thumb' as string]: `url(${url})` });
+
+/** Only assembled creatives can be picked — catalog imagery is the fallback. */
+const POOL = CREATIVES.filter((c) => c.kind !== 'catalog');
 
 export interface SavedShoppableAsset {
   name: string;
@@ -65,7 +71,7 @@ export default function ShoppableContentDrawer({
   const [nameEdited, setNameEdited] = useState<string | null>(null);
   const [productIds, setProductIds] = useState<string[]>([]);
   const [url, setUrl] = useState('');
-  const [kindTab, setKindTab] = useState<DrawerKind>('video');
+  const [kindTab, setKindTab] = useState<CreativeKind>('video');
   const [tag, setTag] = useState('All');
   const [query, setQuery] = useState('');
   const [productQuery, setProductQuery] = useState('');
@@ -124,25 +130,23 @@ export default function ShoppableContentDrawer({
   );
 
   const linkedIds = product ? LINKED[product.id] ?? [] : [];
-  const pool = selectMode
-    ? DRAWER_CREATIVES.filter((a) => linkedIds.includes(a.id))
-    : DRAWER_CREATIVES;
+  const pool = selectMode ? POOL.filter((a) => linkedIds.includes(a.id)) : POOL;
   const inKind = pool.filter((a) => a.kind === kindTab);
   const q = query.trim().toLowerCase();
   const visible = inKind.filter(
     (a) =>
-      (tag === 'All' || a.tag === tag) &&
+      (tag === 'All' || a.tags.includes(tag)) &&
       (!q ||
         a.name.toLowerCase().includes(q) ||
-        a.tag.toLowerCase().includes(q) ||
-        a.meta.toLowerCase().includes(q)),
+        a.tags.some((t) => t.toLowerCase().includes(q)) ||
+        creativeMeta(a).toLowerCase().includes(q)),
   );
-  const chosen = DRAWER_CREATIVES.filter((a) => creatives.includes(a.id));
+  const chosen = POOL.filter((a) => creatives.includes(a.id));
   const ready = destReady && chosen.length > 0;
 
-  const scoped = selectMode
-    ? PRODUCTS.filter((p) => CAMPAIGN_PRODUCT_IDS.includes(p.id))
-    : PRODUCTS;
+  // In select mode the campaign hands over its own products; the catalog is
+  // the whole list otherwise.
+  const scoped = selectMode ? PRODUCTS.filter((p) => linkedCount(p.id) > 0) : PRODUCTS;
   const needy = scoped.filter((p) => linkedCount(p.id) === 0);
   const pq = productQuery.trim().toLowerCase();
   // Products carrying nothing but catalog imagery lead — they are the work to do.
@@ -151,7 +155,7 @@ export default function ShoppableContentDrawer({
     .slice()
     .sort((a, b) => (linkedCount(a.id) === 0 ? 0 : 1) - (linkedCount(b.id) === 0 ? 0 : 1));
 
-  const tagNames = ['All', ...Array.from(new Set(inKind.map((a) => a.tag)))];
+  const tagNames = ['All', ...Array.from(new Set(inKind.flatMap((a) => a.tags)))];
 
   const destLabel = () => {
     const u = stripProtocol(url.trim());
@@ -245,7 +249,7 @@ export default function ShoppableContentDrawer({
   const catalogSource = selectMode || source === 'catalog';
   const urlSource = !selectMode && source === 'url';
   const previewAsset =
-    visible.find((a) => a.id === previewId) ?? DRAWER_CREATIVES.find((a) => a.id === previewId);
+    visible.find((a) => a.id === previewId) ?? POOL.find((a) => a.id === previewId);
 
   const stepPreview = (delta: number) => {
     if (!previewAsset || visible.length < 2) return;
@@ -439,7 +443,7 @@ export default function ShoppableContentDrawer({
                     />
                     {resolved ? (
                       <div className={s.urlResolved}>
-                        <div className={s.urlResolvedThumb} style={bg(resolved.image)} />
+                        <div className={s.urlResolvedThumb} style={bg(resolved.photo)} />
                         <div className={s.urlResolvedText}>
                           <strong style={{ fontWeight: 600 }}>{resolved.sku}</strong> owns this URL,
                           so it has been selected for you.
@@ -515,7 +519,7 @@ export default function ShoppableContentDrawer({
                             <span className={`${s.checkbox} ${active ? s.checkboxOn : ''}`}>
                               {active ? <IconCheck size={11} /> : null}
                             </span>
-                            <div className={s.productThumb} style={bg(p.image)} />
+                            <div className={s.productThumb} style={bg(p.photo)} />
                             <div className={s.productBody}>
                               <div
                                 className={`${s.productName} ${active ? s.productNameActive : ''}`}
@@ -598,7 +602,7 @@ export default function ShoppableContentDrawer({
 
                     <div className={s.controls}>
                       <div className={s.kindTabs}>
-                        {DRAWER_KINDS.map((k) => {
+                        {SELECTABLE_KINDS.map((k) => {
                           const n = pool.filter((a) => a.kind === k.key).length;
                           return (
                             <button
@@ -713,7 +717,7 @@ export default function ShoppableContentDrawer({
                           const n =
                             t === 'All'
                               ? inKind.length
-                              : inKind.filter((a) => a.tag === t).length;
+                              : inKind.filter((a) => a.tags.includes(t)).length;
                           return (
                             <button
                               type="button"
@@ -733,9 +737,7 @@ export default function ShoppableContentDrawer({
                         <div className={s.cardGrid}>
                           {visible.map((a) => {
                             const checked = creatives.includes(a.id);
-                            const kindLabel = (
-                              DRAWER_KINDS.find((k) => k.key === a.kind) ?? DRAWER_KINDS[0]
-                            ).label.toUpperCase();
+                            const kind = kindLabel(a.kind).toUpperCase();
                             return (
                               <div
                                 key={a.id}
@@ -750,10 +752,10 @@ export default function ShoppableContentDrawer({
                                   aria-pressed={checked}
                                   aria-label={`Select ${a.name}`}
                                 >
-                                  <div className={s.cardImage} style={bg(a.image)} />
+                                  <div className={s.cardImage} style={bg(a.media)} />
                                   <div className={s.cardBadges}>
-                                    <span className={s.cardBadge}>{kindLabel}</span>
-                                    <span className={s.cardBadge}>{a.tag.toUpperCase()}</span>
+                                    <span className={s.cardBadge}>{kind}</span>
+                                    <span className={s.cardBadge}>{a.tags[0]?.toUpperCase()}</span>
                                   </div>
                                   <div
                                     className={`${s.cardMark} ${checked ? s.cardMarkOn : ''}`}
@@ -762,7 +764,7 @@ export default function ShoppableContentDrawer({
                                       <IconCheck size={12} style={{ color: '#fff' }} />
                                     ) : null}
                                   </div>
-                                  <div className={s.cardDuration}>{a.badge}</div>
+                                  <div className={s.cardDuration}>{creativeBadge(a)}</div>
                                   {/* Sits inside the toggling image, so it must not bubble. */}
                                   <button
                                     type="button"
@@ -786,7 +788,7 @@ export default function ShoppableContentDrawer({
                                   >
                                     {a.name}
                                   </div>
-                                  <div className={s.cardMeta}>{a.meta}</div>
+                                  <div className={s.cardMeta}>{creativeMeta(a)}</div>
                                 </div>
                               </div>
                             );
@@ -821,25 +823,22 @@ export default function ShoppableContentDrawer({
                 <div className={s.previewScrim} onClick={() => setPreviewId(null)} />
                 <div className={s.previewCard}>
                   <div className={s.previewMedia}>
-                    <div className={s.previewImage} style={bg(previewAsset.image)} />
-                    <div className={s.previewBadge}>{previewAsset.badge}</div>
+                    <div className={s.previewImage} style={bg(previewAsset.media)} />
+                    <div className={s.previewBadge}>{creativeBadge(previewAsset)}</div>
                   </div>
                   <div className={s.previewBody}>
                     <div className={s.previewTop}>
                       <div style={{ minWidth: 0 }}>
                         <div className={s.previewChips}>
-                          <span className={s.previewChip}>
-                            {
-                              (
-                                DRAWER_KINDS.find((k) => k.key === previewAsset.kind) ??
-                                DRAWER_KINDS[0]
-                              ).label
-                            }
-                          </span>
-                          <span className={s.previewChip}>{previewAsset.tag}</span>
+                          <span className={s.previewChip}>{kindLabel(previewAsset.kind)}</span>
+                          {previewAsset.tags.map((t) => (
+                            <span key={t} className={s.previewChip}>
+                              {t}
+                            </span>
+                          ))}
                         </div>
                         <p className={s.previewName}>{previewAsset.name}</p>
-                        <p className={s.previewMeta}>{previewAsset.meta}</p>
+                        <p className={s.previewMeta}>{creativeMeta(previewAsset)}</p>
                       </div>
                       <button
                         type="button"
@@ -856,9 +855,8 @@ export default function ShoppableContentDrawer({
                         <p className={s.previewFactLabel}>In shoppable assets</p>
                         <p className={s.previewFactValue}>
                           {(() => {
-                            const usedIn = Object.keys(LINKED)
-                              .filter((k) => (LINKED[k] ?? []).includes(previewAsset.id))
-                              .map((k) => PRODUCTS.find((x) => x.id === k)?.sku)
+                            const usedIn = productsUsing(previewAsset.id)
+                              .map((id) => PRODUCTS.find((x) => x.id === id)?.sku)
                               .filter(Boolean);
                             return usedIn.length ? usedIn.join(', ') : 'Not in one yet';
                           })()}

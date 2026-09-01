@@ -6,7 +6,9 @@ import ChecklistPanel, {
   checklistStyles as cl,
 } from '../../components/ChecklistPanel';
 import ShoppableContentDrawer from '../shoppableDrawer/ShoppableContentDrawer';
-import { PAGE_URL, PROMOTED_PRODUCTS, URL_SPUS, shorten, type PromotedProduct } from '../../data/campaign';
+import { PAGE_URL, PROMOTED, URL_SPUS, shorten, type PromotedProduct } from '../../data/campaign';
+import { creativeBadge, type Creative } from '../../data/creatives';
+import { bg } from '../../data/media';
 import { libraryRoutes, routes } from '../../routes';
 import {
   IconCalendar,
@@ -19,23 +21,24 @@ import {
 } from '../../components/icons';
 import ProductPickerDrawer from './ProductPickerDrawer';
 import SelectCreativesDrawer from './SelectCreativesDrawer';
-import { bg } from './style';
 import s from './Campaign.module.css';
 
 type UrlMatch = 'all' | 'partial' | 'none';
 
+/** One line of "Creatives for these products" — a promoted product, or the
+    destination URL itself when the campaign targets a page rather than a SPU. */
 interface Row {
   key: string;
   isUrl: boolean;
   name: string;
-  spu: string;
-  spuGap: boolean;
-  note?: string;
-  img?: string;
+  sku: string;
+  detail: string;
   gap: boolean;
-  covers: { cover?: string; fallback: string }[];
+  note?: string;
+  entry?: PromotedProduct;
+  /** What the ad can actually show: linked creatives, else the catalog photo. */
+  covers: Creative[];
   onEdit: () => void;
-  rawSpu: string;
 }
 
 export default function CampaignPage() {
@@ -55,60 +58,71 @@ export default function CampaignPage() {
   const [prod, setProd] = useState(0);
   const [tab, setTab] = useState<'Video' | 'Image' | 'Catalog'>('Video');
   const [mode, setMode] = useState<'Product' | 'Creative'>('Product');
-  const [sel, setSel] = useState<number[]>([0, 1, 2]);
+  const [sel, setSel] = useState<string[]>([]);
 
   const curated = scope === 'curated';
   const urlMode = target === 'URL';
 
   const base = urlMode
-    ? PROMOTED_PRODUCTS.filter((p) => URL_SPUS.includes(p.spu))
+    ? PROMOTED.filter((e) => URL_SPUS.includes(e.product.sku))
     : curated
-      ? PROMOTED_PRODUCTS.filter((p) => picked.includes(p.spu))
-      : PROMOTED_PRODUCTS;
-  const list = base.filter((p) => !removed.includes(p.spu));
+      ? PROMOTED.filter((e) => picked.includes(e.product.sku))
+      : PROMOTED;
+  const list = base.filter((e) => !removed.includes(e.product.sku));
   const trimmed = curated || removed.length > 0;
-  const activeProduct: PromotedProduct =
-    list[Math.min(prod, list.length - 1)] ?? PROMOTED_PRODUCTS[0];
+  const activeEntry: PromotedProduct = list[Math.min(prod, list.length - 1)] ?? PROMOTED[0];
 
-  const openEditor = (index: number, product: PromotedProduct) => {
+  /** Opening the editor pre-selects everything already linked — the campaign
+      runs all of it unless you narrow it down. */
+  const openEditor = (index: number, entry: PromotedProduct) => {
     setDrawer(true);
     setMode('Product');
     setProd(index);
-    setSel([0, 1, 2].slice(0, product.videos));
+    setSel(entry.creatives.map((c) => c.id));
   };
 
-  const productRow = (p: PromotedProduct, i: number): Row => ({
-    key: p.spu,
+  const catalogPhotoOf = (entry: PromotedProduct): Creative[] => [
+    {
+      id: `fallback-${entry.product.id}`,
+      kind: 'catalog',
+      name: entry.product.name,
+      media: entry.product.photo,
+      tags: [],
+      format: 'Catalog image',
+      aspect: '1:1',
+      dimension: '1000 x 1000',
+      source: 'catalog',
+      status: 'approved',
+      spend: '0.00',
+    },
+  ];
+
+  const productRow = (entry: PromotedProduct, i: number): Row => ({
+    key: entry.product.id,
     isUrl: false,
-    name: shorten(p.name),
-    rawSpu: p.spu,
-    img: p.img,
-    gap: p.videos === 0,
-    spuGap: p.videos === 0,
-    spu:
-      p.videos === 0
-        ? `${p.spu} · a still product photo is all this ad can show`
-        : `${p.spu} · ${p.videos} ${p.videos === 1 ? 'creative' : 'creatives'}`,
+    name: shorten(entry.product.name),
+    sku: entry.product.sku,
+    entry,
+    gap: entry.catalogOnly,
+    detail: entry.catalogOnly
+      ? `${entry.product.sku} · a still product photo is all this ad can show`
+      : `${entry.product.sku} · ${entry.creatives.length} ${entry.creatives.length === 1 ? 'creative' : 'creatives'}`,
     note: urlMode ? PAGE_URL : undefined,
-    covers:
-      p.videos === 0
-        ? [{ cover: undefined, fallback: p.img }]
-        : Array.from({ length: p.videos }, (_, k) => ({
-            cover: p.covers?.[k],
-            fallback: p.img,
-          })),
-    onEdit: () => openEditor(i, p),
+    covers: entry.catalogOnly ? catalogPhotoOf(entry) : entry.creatives,
+    onEdit: () => openEditor(i, entry),
   });
+
+  /** Creatives reachable through the URL rather than a SPU. */
+  const urlCreatives = list.flatMap((e) => e.creatives).slice(0, 3);
 
   const urlRow = (): Row => ({
     key: 'url-row',
     isUrl: true,
     name: PAGE_URL,
-    rawSpu: '',
+    sku: '',
     gap: false,
-    spuGap: false,
-    spu: 'Destination URL · 3 creatives',
-    covers: PROMOTED_PRODUCTS.slice(0, 3).map((p) => ({ cover: undefined, fallback: p.img })),
+    detail: `Destination URL · ${urlCreatives.length} ${urlCreatives.length === 1 ? 'creative' : 'creatives'}`,
+    covers: urlCreatives,
     onEdit: () => {
       setDrawer(true);
       setMode('Creative');
@@ -121,8 +135,7 @@ export default function CampaignPage() {
   else if (urlMatch === 'none') rows = [urlRow()];
   else rows = [...list.map(productRow), urlRow()];
 
-  const productRows = rows.filter((r) => !r.isUrl);
-  const thumbRows = productRows.slice(0, 5);
+  const thumbRows = rows.filter((r) => !r.isUrl).slice(0, 5);
   const allScope = !trimmed && !urlMode;
   const showPromotedBox = !(urlMode && urlMatch === 'none');
 
@@ -135,10 +148,10 @@ export default function CampaignPage() {
 
   const urlRowsCaption =
     urlMatch === 'partial'
-      ? '2 product rows · 1 URL row · 3 creatives linked to this URL'
+      ? `2 product rows · 1 URL row · ${urlCreatives.length} creatives linked to this URL`
       : urlMatch === 'none'
-        ? '1 URL row · 3 creatives linked to this URL'
-        : `${list.length} product rows · 1 URL row · ${list.filter((p) => p.videos === 0).length} product without creatives`;
+        ? `1 URL row · ${urlCreatives.length} creatives linked to this URL`
+        : `${list.length} product rows · 1 URL row · ${list.filter((e) => e.catalogOnly).length} without creatives`;
 
   return (
     <div className={s.page}>
@@ -397,13 +410,13 @@ export default function CampaignPage() {
                       <div className={s.thumbStrip}>
                         {thumbRows.map((r) => (
                           <div key={r.key} className={s.thumbWrap}>
-                            <div className={s.thumbTile} style={bg(r.img)} />
+                            <div className={s.thumbTile} style={bg(r.entry?.product.photo)} />
                             <button
                               type="button"
                               className={s.thumbRemove}
                               aria-label={`Remove ${r.name}`}
                               onClick={() => {
-                                setRemoved((cur) => [...cur, r.rawSpu]);
+                                setRemoved((cur) => [...cur, r.sku]);
                                 setProd(0);
                               }}
                             >
@@ -426,7 +439,7 @@ export default function CampaignPage() {
                     {r.isUrl ? (
                       <div className={s.rowUrlDot} />
                     ) : (
-                      <div className={s.rowThumb} style={bg(r.img)} />
+                      <div className={s.rowThumb} style={bg(r.entry?.product.photo)} />
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div className={s.rowNameLine}>
@@ -438,15 +451,16 @@ export default function CampaignPage() {
                           </span>
                         ) : null}
                       </div>
-                      <div className={`${s.rowSpu} ${r.spuGap ? s.rowSpuGap : ''}`}>{r.spu}</div>
+                      <div className={`${s.rowSpu} ${r.gap ? s.rowSpuGap : ''}`}>{r.detail}</div>
                       {r.note ? <div className={s.rowNote}>{r.note}</div> : null}
                     </div>
                     <div className={s.rowCovers}>
-                      {r.covers.map((c, k) => (
+                      {r.covers.map((c) => (
                         <div
-                          key={k}
+                          key={c.id}
                           className={`${s.cover} ${r.gap ? s.coverGap : ''}`}
-                          style={bg(c.cover, c.fallback)}
+                          style={bg(c.media)}
+                          title={`${c.name} · ${creativeBadge(c)}`}
                         />
                       ))}
                     </div>
@@ -732,15 +746,15 @@ export default function CampaignPage() {
 
       {picker ? (
         <ProductPickerDrawer
-          initialSelection={list.map((p) => p.spu)}
+          initialSelection={list.map((e) => e.product.sku)}
           onCancel={() => setPicker(false)}
           onSave={(selection) => {
             setPicker(false);
-            setScope(selection.length === PROMOTED_PRODUCTS.length ? 'all' : 'curated');
+            setScope(selection.length === PROMOTED.length ? 'all' : 'curated');
             setPicked(selection);
             setRemoved([]);
             setProd(0);
-            setSel([0, 1, 2]);
+            setSel([]);
           }}
         />
       ) : null}
@@ -749,11 +763,11 @@ export default function CampaignPage() {
       {drawer && !connectOpen ? (
         <SelectCreativesDrawer
           list={list}
-          product={activeProduct}
+          entry={activeEntry}
           prod={prod}
           onPickProduct={(i) => {
             setProd(i);
-            setSel([0, 1, 2].slice(0, list[i]?.videos ?? 0));
+            setSel((list[i]?.creatives ?? []).map((c) => c.id));
           }}
           mode={mode}
           onSetMode={setMode}
@@ -795,7 +809,7 @@ export default function CampaignPage() {
         open={connectOpen}
         mode="link"
         backLabel="Back to product selection"
-        presetProduct={activeProduct.spu}
+        presetProduct={activeEntry.product.sku}
         onClose={() => setConnectOpen(false)}
         onDone={() => setConnectOpen(false)}
       />

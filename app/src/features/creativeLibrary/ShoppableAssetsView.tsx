@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { LIBRARY_CREATIVES, type ShoppableAsset } from '../../data/library';
+import { type ShoppableAsset } from '../../data/library';
+import { creativeById } from '../../data/creatives';
+import { bg } from '../../data/media';
 import { CATALOG_NAME, PRODUCTS, type Product } from '../../data/products';
 import { libraryRoutes } from '../../routes';
 import { IconCatalog, IconSearch } from '../../components/icons';
 import type { CampaignTarget } from './AddToCampaignsModal';
 import s from './CreativeLibrary.module.css';
-
-const bg = (url: string) => ({ ['--thumb' as string]: `url(${url})` });
 
 const spuOf = (set: ShoppableAsset) => {
   const m = (set.destinationLabel || '').match(/SPU\s+(\d+)/);
@@ -233,9 +233,7 @@ export default function ShoppableAssetsView({
 
               {rows.map(({ product, set, needs }) => {
                 const thumbs = set
-                  ? set.assetIds
-                      .map((id) => LIBRARY_CREATIVES.find((x) => x.id === id))
-                      .filter(Boolean)
+                  ? set.assetIds.map(creativeById).filter((c) => Boolean(c))
                   : [];
                 const key = product ? product.id : set!.id;
                 return (
@@ -248,7 +246,7 @@ export default function ShoppableAssetsView({
                     <div className={s.productCell}>
                       <div
                         className={`${s.productThumb} ${product ? '' : s.productThumbEmpty}`}
-                        style={product ? bg(product.image) : undefined}
+                        style={product ? bg(product.photo) : undefined}
                       />
                       <div style={{ minWidth: 0 }}>
                         <p className={s.productName}>
@@ -270,7 +268,7 @@ export default function ShoppableAssetsView({
                               <div
                                 key={t!.id}
                                 className={s.assetThumb}
-                                style={bg(t!.thumbnail)}
+                                style={bg(t!.media)}
                               />
                             ))}
                           </div>

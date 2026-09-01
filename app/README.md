@@ -66,12 +66,10 @@ still arrive inline, through a `--thumb` custom property the stylesheet consumes
 
 Everything below is a deliberate choice, not an oversight.
 
-1. **Missing cover images.** The campaign screen references 14 creative cover
-   frames (`uploads/pasted-1788221575494-0.png`, `uploads/lipliner-1-trim.png`,
-   …) that were not included in the handoff bundle, so those tiles render as grey
-   boxes in the prototype. Tiles here layer `url(cover), url(productPhoto)`, so a
-   missing cover falls through to the real product photo. Dropping the files into
-   `public/uploads/` restores the intended frames with no code change.
+1. **Cover frames come from the creatives.** The campaign screen referenced 14
+   cover files that the handoff bundle did not ship, so those tiles were grey
+   boxes in the prototype. With the merged model the campaign shows the linked
+   creatives' own frames instead, and the orphaned filenames are gone.
 2. **Search boxes are real inputs.** Three search fields were static `<span>`
    placeholders in the source (rail products, drawer creatives, shoppable
    assets). They are `<input>`s here and actually filter, which also avoids the
@@ -87,18 +85,38 @@ Everything below is a deliberate choice, not an oversight.
    table-row fragments left over from an earlier edit, sitting outside their
    `sc-for` loop where their template holes could never resolve. They rendered
    nothing and are not reproduced.
-6. **Two creative datasets, kept separate.** The Creative Library's media table
-   and the drawer's selection grid ran on different arrays in the prototypes —
-   the table needs review status, source and spend, which the drawer never shows.
-   `data/library.ts` and `data/creatives.ts` preserve that split rather than
-   inventing a merge. Worth reconciling if this goes near a real API.
+6. **One creative model, not three.** The prototypes kept the Creative Library's
+   media table, the drawer's selection grid and the campaign's per-product cut
+   frames in three unrelated arrays, so the same footage had to be restated in
+   each. They are now one `CREATIVES` list that all three read, with `LINKED` as
+   the only place a creative meets a product. Three visible consequences:
+   the campaign promotes the whole catalog rather than its own eight-product
+   list; a product's creative count is derived from its links instead of being
+   hardcoded; and catalog imagery is generated from the products, so
+   "Catalog (0)" is unreachable by construction.
+
+## Media
+
+Every image is a `MediaRef` — a `local` path under `public/media/` and the
+`remote` URL the prototypes pointed at. Backgrounds layer local over remote, so
+a local file that is not there yet falls through to the CDN, and the day it
+lands it takes over with no code change. `public/media/README.md` maps each slot
+to the product or creative it belongs to.
+
+To vendor the remote imagery so the app stops depending on the CDN:
+
+```bash
+npm run fetch-media          # downloads what is missing into public/media/
+npm run fetch-media -- --force
+```
+
+Run it somewhere with access to getlevplus.com. Commit what it saves.
 
 ## Known data notes
 
-- Product imagery comes from `getlevplus.com`'s Shopify CDN and the Creative
-  Library's media table still uses Unsplash thumbnails, exactly as the design
-  does. Both need outbound network access; in a sandbox they fail and the tiles
-  fall back to their placeholder colour.
+- The 13th product, `SPU 4483 Blending Brush Applicator`, is a placeholder
+  pending its real catalog entry — name, price, path and photo all need filling
+  in. It carries no links, which is exactly the state the flow exists to resolve.
 - `Campaign No Shoppable Content.dc.html` and `Flow Map.dc.html` are referenced
   by the prototypes but are not in the bundle. The Campaigns entry in the icon
   rail points at the campaign screen that does exist; the Flow map buttons were

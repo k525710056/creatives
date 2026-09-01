@@ -1,19 +1,12 @@
-import {
-  CREATIVE_SOURCE,
-  LIBRARY_CREATIVES,
-  LIBRARY_KINDS,
-  REVIEW_STATUS,
-  type LibraryKind,
-  type ShoppableAsset,
-} from '../../data/library';
+import { CREATIVE_SOURCE, REVIEW_STATUS, type ShoppableAsset } from '../../data/library';
+import { CREATIVES, CREATIVE_KINDS, type CreativeKind } from '../../data/creatives';
+import { bg } from '../../data/media';
 import { IconCheck } from '../../components/icons';
 import s from './CreativeLibrary.module.css';
 
-const bg = (url: string) => ({ ['--thumb' as string]: `url(${url})` });
-
 interface Props {
-  mediaTab: LibraryKind;
-  onSelectTab: (kind: LibraryKind) => void;
+  mediaTab: CreativeKind;
+  onSelectTab: (kind: CreativeKind) => void;
   setsFor: (assetId: string) => ShoppableAsset[];
   allLinked: boolean;
   onOpenDrawer: () => void;
@@ -28,8 +21,8 @@ export default function MediaTable({
   onOpenDrawer,
   onGoShoppable,
 }: Props) {
-  const rows = LIBRARY_CREATIVES.filter((a) => a.kind === mediaTab);
-  const title = (LIBRARY_KINDS.find((k) => k.key === mediaTab) ?? LIBRARY_KINDS[0]).label;
+  const rows = CREATIVES.filter((a) => a.kind === mediaTab);
+  const title = (CREATIVE_KINDS.find((k) => k.key === mediaTab) ?? CREATIVE_KINDS[0]).label;
 
   return (
     <div className={s.stack16}>
@@ -64,9 +57,9 @@ export default function MediaTable({
 
       <div className={s.tableCard}>
         <div className={s.tabs}>
-          {LIBRARY_KINDS.map((k) => {
+          {CREATIVE_KINDS.map((k) => {
             const active = k.key === mediaTab;
-            const count = LIBRARY_CREATIVES.filter((a) => a.kind === k.key).length;
+            const count = CREATIVES.filter((a) => a.kind === k.key).length;
             return (
               <button
                 type="button"
@@ -100,7 +93,7 @@ export default function MediaTable({
               return (
                 <div key={a.id} className={s.mediaRow}>
                   <div className={s.mediaCreative}>
-                    <div className={s.mediaThumb} style={bg(a.thumbnail)} />
+                    <div className={s.mediaThumb} style={bg(a.media)} />
                     <div style={{ minWidth: 0 }}>
                       <p className={s.mediaName}>{a.name}</p>
                       <p className={s.mediaDimension}>{a.dimension}</p>
@@ -123,7 +116,7 @@ export default function MediaTable({
                   </div>
 
                   <div className={s.cellWrap}>
-                    {a.tags.map((tag) => (
+                    {a.tags.map((tag: string) => (
                       <span key={tag} className={s.tagChip}>
                         {tag}
                       </span>
