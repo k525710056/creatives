@@ -1,0 +1,56 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-canvas);
+  color: var(--fg-primary);
+  font-family: var(--font-text);
+  font-size: 13px;
+  line-height: 18px;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--fg-link);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--synergy-500);
+  text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Shared keyframes — the drawers and scrims across every screen use these. */
+@keyframes drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

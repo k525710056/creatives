@@ -1,0 +1,29 @@
+.rail {
+  width: 72px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface);
+  padding: 16px 0;
+}
+
+.item {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neutral-400);
+}
+
+a.item:hover {
+  text-decoration: none;
+}
+
+.active {
+  background: var(--teal-tint);
+  color: var(--teal-deep);
+}

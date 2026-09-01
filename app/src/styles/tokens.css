@@ -1,0 +1,179 @@
+/* =========================================================================
+   Keystone TTAM Design System — Colors & Type
+   Lifted from ds/colors_and_type.css in the Claude Design handoff bundle,
+   plus the literal values the prototypes used that the DS file does not name.
+   ========================================================================= */
+
+/* ---------- Fonts ---------- */
+@font-face {
+  font-family: "TikTok Sans Text";
+  src: url("./fonts/TikTokSans16pt-Regular.otf") format("opentype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Text";
+  src: url("./fonts/TikTokSans16pt-Medium.otf") format("opentype");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Text";
+  src: url("./fonts/TikTokSans16pt-SemiBold.otf") format("opentype");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Text";
+  src: url("./fonts/TikTokSans16pt-Bold.otf") format("opentype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Text Small";
+  src: url("./fonts/TikTokSans12pt-Regular.otf") format("opentype");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Text Small";
+  src: url("./fonts/TikTokSans12pt-Medium.otf") format("opentype");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Display";
+  src: url("./fonts/TikTokSans36pt-Medium.otf") format("opentype");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Display";
+  src: url("./fonts/TikTokSans36pt-SemiBold.otf") format("opentype");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "TikTok Sans Display";
+  src: url("./fonts/TikTokSans36pt-Bold.otf") format("opentype");
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+:root {
+  /* ---------- Type ---------- */
+  --font-display: "TikTok Sans Display", "TikTok Sans Text", system-ui, sans-serif;
+  --font-text: "TikTok Sans Text", system-ui, sans-serif;
+  --font-text-sm: "TikTok Sans Text Small", "TikTok Sans Text", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* ---------- Synergy — primary teal ---------- */
+  --synergy-1000: #ffffff;
+  --synergy-995:  #f2fdfc;
+  --synergy-975:  #e8fbf9;
+  --synergy-950:  #d7f2f0;
+  --synergy-850:  #9ee1dd;
+  --synergy-500:  #009995;
+  --synergy-450:  #017976;
+  --synergy-200:  #002c2b;
+
+  /* Creative Library ships a slightly brighter teal than the campaign screens. */
+  --teal-bright:  #00a19b;
+  --teal-bright-hover: #008f8a;
+  --teal-deep:    #00807a;
+  --teal-tint:    #e9f7f6;
+  --teal-tint-border: #c9e8e6;
+  --teal-400:     #00bdb8;
+  --teal-500:     var(--synergy-500);
+  --teal-600:     var(--synergy-450);
+
+  /* ---------- Support — periwinkle accent (the NEW badge) ---------- */
+  --support-850:  #cdcfff;
+  --support-500:  #8078f6;
+  --support-450:  #4b3fd6;
+
+  /* ---------- Neutral ---------- */
+  --neutral-1000: #ffffff;
+  --neutral-995:  #fafbfb;
+  --neutral-990:  #f8f8f9;
+  --neutral-985:  #f6f7f8;
+  --neutral-975:  #f2f3f3;
+  --neutral-970:  #f2f3f4;
+  --neutral-960:  #f0f1f1;
+  --neutral-950:  #ececed;
+  --neutral-940:  #e6e7e8;
+  --neutral-850:  #d3d4d5;
+  --neutral-800:  #c4c5c6;
+  --neutral-700:  #b0b1b2;
+  --neutral-650:  #a9abac;
+  --neutral-600:  #8a8b8c;
+  --neutral-500:  #87898b;
+  --neutral-450:  #6d6e71;
+  --neutral-400:  #4a4b4c;
+  --neutral-200:  #262627;
+  --neutral-150:  #121415;
+  --neutral-0:    #000000;
+
+  /* ---------- Function ---------- */
+  --warning-650:  #d2a106;
+  --warning-600:  #e0a800;
+  --warning-500:  #b45309;
+  --warning-475:  #a07508;
+  --warning-450:  #8d670b;
+  --warning-850:  #fad253;
+  --warning-800:  #f7e0b0;
+  --warning-975:  #fdf5da;
+  --warning-990:  #fffaf0;
+  --warning-993:  #fffbec;
+  --warning-995:  #fffdf6;
+  --warning-surface: #fff4e5;
+
+  --success-500:  #2a9c49;
+  --success-450:  #057e33;
+  --success-400:  #0d9f6e;
+  --success-300:  #1f7d38;
+  --success-200:  #0a5c26;
+  --success-850:  #bfe9c6;
+  --success-975:  #e7fde8;
+
+  --violet-500:   #7c3aed;
+
+  /* ---------- Semantic surfaces ---------- */
+  --bg-canvas:       var(--neutral-990);
+  --bg-canvas-alt:   var(--neutral-960);
+  --bg-surface:      var(--neutral-1000);
+  --bg-surface-sunk: var(--neutral-985);
+  --bg-header:       var(--neutral-0);
+  --bg-scrim:        rgba(0, 0, 0, 0.5);
+
+  --fg-primary:      var(--neutral-150);
+  --fg-secondary:    var(--neutral-450);
+  --fg-muted:        var(--neutral-500);
+  --fg-faint:        var(--neutral-650);
+  --fg-inverse:      var(--neutral-1000);
+  --fg-link:         var(--synergy-450);
+
+  --border-hairline: var(--neutral-975);
+  --border-subtle:   var(--neutral-950);
+  --border-muted:    var(--neutral-940);
+  --border-default:  var(--neutral-850);
+  --border-brand:    var(--synergy-500);
+
+  /* ---------- Radius ---------- */
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-full: 9999px;
+
+  /* ---------- Elevation ---------- */
+  --shadow-menu: 0 8px 24px rgba(22, 24, 35, 0.16);
+  --shadow-modal: 0 16px 48px rgba(22, 24, 35, 0.28);
+  --shadow-drawer: -8px 0 32px rgba(22, 24, 35, 0.18);
+  --shadow-popover: 0 8px 28px rgba(22, 24, 35, 0.2), 0 0 1px rgba(22, 24, 35, 0.2);
+  --shadow-raised: 0 1px 2px rgba(22, 24, 35, 0.1);
+
+  /* ---------- Motion ---------- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+}

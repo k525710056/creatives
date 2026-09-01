@@ -1,0 +1,274 @@
+/* The floating "Get started on Ads Manager" popup. It is fixed on purpose:
+   it must never take a column out of the page it overlays. */
+.panel {
+  width: min(392px, calc(100vw - 48px));
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-popover);
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  max-height: calc(100vh - 104px);
+  overflow: auto;
+  z-index: 30;
+  font-family: var(--font-text);
+}
+
+/* The campaign screen has a 72px action bar, so its panel sits above it. */
+.aboveActionBar {
+  bottom: 88px;
+  max-height: calc(100vh - 168px);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  cursor: pointer;
+}
+
+.headCompact {
+  padding: 14px 20px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: var(--weight-semibold);
+  color: var(--fg-primary);
+}
+
+.titleCompact {
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.countPill {
+  display: inline-flex;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  background: var(--synergy-975);
+  color: var(--synergy-450);
+  font-size: 11px;
+  font-weight: var(--weight-medium);
+  font-family: var(--font-text-sm);
+  flex: none;
+}
+
+.caret {
+  color: var(--fg-secondary);
+  flex: none;
+  transition: transform var(--duration-base) var(--ease-standard);
+}
+
+.caretCollapsed {
+  transform: rotate(180deg);
+}
+
+.summary {
+  padding: 0 20px 16px;
+}
+
+.progressLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.progressValue {
+  font-size: 18px;
+  font-weight: var(--weight-bold);
+  color: var(--fg-primary);
+}
+
+.progressRemaining {
+  font-size: 12px;
+  color: var(--fg-secondary);
+}
+
+.bars {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.barsCompact {
+  margin-bottom: 12px;
+}
+
+.bar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--border-subtle);
+}
+
+.barDone {
+  background: var(--synergy-500);
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 19px;
+  color: var(--fg-secondary);
+  text-wrap: pretty;
+}
+
+.body {
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* --- rows --- */
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-hairline);
+}
+
+.rowCompact {
+  align-items: center;
+  padding: 12px 20px;
+}
+
+.rowCurrent {
+  padding: 16px 20px;
+  background: var(--synergy-995);
+  border-left: 3px solid var(--synergy-500);
+}
+
+.rowLast {
+  border-bottom: none;
+  border-top: 1px solid var(--border-hairline);
+  padding: 16px 20px;
+}
+
+.mark {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--synergy-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--neutral-1000);
+  margin-top: 1px;
+}
+
+.markOpen {
+  background: transparent;
+  border: 2px solid var(--synergy-500);
+}
+
+.markMuted {
+  background: transparent;
+  border: 2px solid var(--border-default);
+}
+
+.rowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.doneTitle {
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: #87898b;
+  text-decoration: line-through;
+  text-decoration-color: var(--border-default);
+}
+
+.doneTitleCompact {
+  font-size: 13px;
+  color: #87898b;
+  text-decoration: line-through;
+  text-decoration-color: var(--border-default);
+}
+
+.doneMeta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--neutral-650);
+  font-family: var(--font-text-sm);
+}
+
+.currentTitle {
+  font-size: 14px;
+  font-weight: var(--weight-semibold);
+  color: var(--fg-primary);
+}
+
+.currentMeta {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--fg-secondary);
+  font-family: var(--font-text-sm);
+  margin-bottom: 10px;
+}
+
+.currentMetaFlush {
+  margin-bottom: 0;
+}
+
+.link {
+  display: block;
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--synergy-450);
+  text-decoration: none;
+}
+
+.cta {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background: var(--synergy-500);
+  color: var(--neutral-1000);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+a.cta:hover {
+  background: var(--synergy-450);
+  color: var(--neutral-1000);
+  text-decoration: none;
+}
+
+.ctaSecondary {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--neutral-200);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+a.ctaSecondary:hover {
+  color: var(--neutral-200);
+  text-decoration: none;
+}
